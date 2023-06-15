@@ -16,19 +16,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
     const status = exception.getStatus();
+    const exceptionResponse = exception.getResponse().valueOf() as any;
 
-    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.error(
-        JSON.stringify({
-          message: exception.getResponse(),
-        })
-      );
-    }
-
-    res.status(status).json({
+    const errorResponse = {
       status,
       timestamp: new Date().toISOString(),
-      message: exception.getResponse(),
-    });
+      message: exceptionResponse.hasOwnProperty("error")
+        ? exceptionResponse["message"]
+        : exceptionResponse,
+      error: exceptionResponse.hasOwnProperty("error")
+        ? exceptionResponse["error"]
+        : undefined,
+    };
+
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(JSON.stringify({ message: errorResponse.message }));
+    }
+
+    res.status(status).json(errorResponse);
   }
 }
