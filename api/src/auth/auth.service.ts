@@ -1,25 +1,18 @@
-import { SecurityConfig } from "@config";
+import * as bcrypt from "bcrypt";
+import { Repository } from "typeorm";
+
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import * as bcrypt from "bcrypt";
-import { PrismaService } from "nestjs-prisma";
-import { CreateAccountDto } from "./dto/create-account.dto";
-import { User } from "./entities/user.entity";
+import { InjectRepository } from "@nestjs/typeorm";
 
-function exclude<User, Key extends keyof User>(
-  user: User,
-  keys: Key[]
-): Omit<User, Key> {
-  for (let key of keys) {
-    delete user[key];
-  }
-  return user;
-}
+import { SecurityConfig } from "@@config";
+import { User } from "@@database/entities";
+import { CreateAccountDto } from "./dto/create-account.dto";
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prismaService: PrismaService,
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,
     private readonly configService: ConfigService
   ) {}
 
@@ -33,8 +26,8 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(data.password, salt);
     data.password = hashedPassword;
 
-    const user = await this.prismaService.user.create({ data });
-    return exclude(user, ["password"]);
+    const user = this.usersRepository.create(data);
+    return this.usersRepository.save(user);
   }
 
   signout() {}

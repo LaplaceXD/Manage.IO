@@ -1,7 +1,8 @@
 import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
-import { User } from "@prisma/client";
-import { PrismaService } from "nestjs-prisma";
+import { getRepositoryToken } from "@nestjs/typeorm";
+
+import { User } from "@@database/entities";
 import { AuthService } from "./auth.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
 
@@ -12,18 +13,20 @@ describe("The AuthService", () => {
   let userDto: CreateAccountDto;
   let authService: AuthService;
   let createMock: jest.Mock;
+  let saveMock: jest.Mock;
 
   beforeEach(async () => {
+    saveMock = jest.fn();
     createMock = jest.fn();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         {
-          provide: PrismaService,
+          provide: getRepositoryToken(User),
           useValue: {
-            user: {
-              create: createMock,
-            },
+            create: createMock,
+            save: saveMock,
           },
         },
       ],
@@ -66,7 +69,8 @@ describe("The AuthService", () => {
         updatedAt: new Date(),
       };
 
-      createMock.mockResolvedValue(user);
+      createMock.mockReturnValue(user);
+      saveMock.mockResolvedValue(user);
     });
 
     describe("and a valid user DTO is provided", () => {

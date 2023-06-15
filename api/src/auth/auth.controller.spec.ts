@@ -1,9 +1,11 @@
-import { SecurityConfig } from "@config";
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
-import { PrismaService } from "nestjs-prisma";
+import { getRepositoryToken } from "@nestjs/typeorm";
 import request from "supertest";
+
+import { SecurityConfig } from "@@config";
+import { User } from "@@database/entities";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 
@@ -13,10 +15,10 @@ describe("The AuthController", () => {
   };
 
   let app: INestApplication;
-  let createMock: jest.Mock;
+  let saveMock: jest.Mock;
 
   beforeEach(async () => {
-    createMock = jest.fn();
+    saveMock = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [
@@ -33,9 +35,9 @@ describe("The AuthController", () => {
         AuthService,
         ConfigService,
         {
-          provide: PrismaService,
+          provide: getRepositoryToken(User),
           useValue: {
-            create: createMock,
+            save: saveMock,
           },
         },
       ],

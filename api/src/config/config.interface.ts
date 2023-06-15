@@ -1,14 +1,8 @@
-import { Environment } from "@common/constants";
+import { Environment } from "@@common/constants";
 import { CorsOptions } from "@nestjs/common/interfaces/external/cors-options.interface";
+import { TypeOrmModuleOptions } from "@nestjs/typeorm";
 
-export interface Config {
-  nest: NestConfig;
-  cors: CorsConfig;
-  swagger: SwaggerConfig;
-  security: SecurityConfig;
-}
-
-export interface NestConfig {
+export interface AppConfig {
   port: number;
   env: Environment;
 }
@@ -28,3 +22,5 @@ export interface SwaggerConfig {
 export interface SecurityConfig {
   saltRounds: number;
 }
+
+export type DatabaseConfig = TypeOrmModuleOptions;

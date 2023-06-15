@@ -4,9 +4,9 @@ import { NestFactory } from "@nestjs/core";
 import compression from "compression";
 import helmet from "helmet";
 
-import { Environment } from "@common/constants";
-import { logger, requestLogger, Swagger } from "@common/services";
-import { CorsConfig, NestConfig } from "@config";
+import { Config, Environment } from "@@common/constants";
+import { Swagger, logger, requestLogger } from "@@common/services";
+import { AppConfig, CorsConfig } from "@@config";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
@@ -28,16 +28,16 @@ async function bootstrap() {
   // Register security and compression
   const config = app.get(ConfigService);
   app.use(compression(), helmet(), requestLogger);
-  app.enableCors(config.getOrThrow<CorsConfig>("cors"));
+  app.enableCors(config.getOrThrow<CorsConfig>(Config.CORS));
 
-  const nestConfig = config.getOrThrow<NestConfig>("nest");
-  await app.listen(nestConfig.port);
+  const appConfig = config.getOrThrow<AppConfig>(Config.APP);
+  await app.listen(appConfig.port);
   const url =
-    nestConfig.env === Environment.PRODUCTION
+    appConfig.env === Environment.PRODUCTION
       ? await app.getUrl()
-      : "http://localhost:" + nestConfig.port;
+      : "http://localhost:" + appConfig.port;
 
-  Logger.log(`Running on '${nestConfig.env}' environment.`);
+  Logger.log(`Running on '${appConfig.env}' environment.`);
   Logger.log(`Application is listening at: ${url}`);
 }
 bootstrap();

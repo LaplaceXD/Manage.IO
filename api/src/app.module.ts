@@ -1,36 +1,28 @@
-import { RequestLoggerMiddleware } from "@common/middleware";
+import { ConfigModule, DatabaseConfig } from "@@config";
 import {
-  BadRequestException,
-  Logger,
+  ClassSerializerInterceptor,
   MiddlewareConsumer,
   Module,
-  ValidationPipe,
 } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { PrismaModule, loggingMiddleware } from "nestjs-prisma";
+import { ConfigService } from "@nestjs/config";
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { HttpExceptionFilter } from "@common/filters/http-exception.filter";
-import config from "@config";
-import { APP_FILTER, APP_PIPE } from "@nestjs/core";
+import { AuthModule } from "@@auth/auth.module";
+import { HttpExceptionFilter } from "@@common/filters";
+import { RequestLoggerMiddleware } from "@@common/middleware";
+import { FormattedValidationPipe } from "@@common/services";
+
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { AuthModule } from "./auth/auth.module";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      load: [config],
-    }),
-    PrismaModule.forRoot({
-      isGlobal: true,
-      prismaServiceOptions: {
-        middlewares: [
-          loggingMiddleware({
-            logger: new Logger("PrismaMiddleware"),
-            logLevel: "log",
-          }),
-        ],
+    ConfigModule,
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        return config.getOrThrow<DatabaseConfig>("database");
       },
     }),
 
@@ -45,19 +37,11 @@ import { AuthModule } from "./auth/auth.module";
     },
     {
       provide: APP_PIPE,
-      useValue: new ValidationPipe({
-        transform: true,
-        exceptionFactory: (errors) =>
-          new BadRequestException(
-            errors.reduce(
-              (formatted, err) => ({
-                ...formatted,
-                [err.property]: Object.values(err.constraints ?? {}),
-              }),
-              {}
-            )
-          ),
-      }),
+      useClass: FormattedValidationPipe,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
     },
   ],
 })
