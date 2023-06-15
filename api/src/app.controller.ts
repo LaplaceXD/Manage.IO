@@ -1,14 +1,15 @@
-import { Controller, Get, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Get, VERSION_NEUTRAL } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { AppService } from "./app.service";
 
-@ApiTags("Root")
-@Controller()
+@ApiTags("dev")
+@Controller({
+  version: VERSION_NEUTRAL,
+})
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @HttpCode(HttpStatus.OK)
-  @Get()
+  @Get("ping")
   ping() {
     return this.appService.ping();
   }
