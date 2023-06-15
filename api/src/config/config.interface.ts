@@ -5,6 +5,7 @@ export interface Config {
   nest: NestConfig;
   cors: CorsConfig;
   swagger: SwaggerConfig;
+  security: SecurityConfig;
 }
 
 export interface NestConfig {
@@ -22,4 +23,8 @@ export interface SwaggerConfig {
   description: string;
   version: string;
   endpoint: string;
+}
+
+export interface SecurityConfig {
+  saltRounds: number;
 }

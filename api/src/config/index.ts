@@ -30,6 +30,9 @@ const config: Config = {
     version: "0.1",
     endpoint: "swagger",
   },
+  security: {
+    saltRounds: 10,
+  },
 };
 
 export * from "./config.interface";
