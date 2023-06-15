@@ -7,33 +7,31 @@ import helmet from "helmet";
 
 import { Environment } from "@common/constants";
 import { logger, requestLogger } from "@common/services";
-import { AppConfig, CorsConfig, SwaggerConfig } from "@config";
+import { CorsConfig, NestConfig, SwaggerConfig } from "@config";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger });
   const configService = app.get(ConfigService);
-  const appConfig = configService.getOrThrow<AppConfig>("app");
+  const appConfig = configService.getOrThrow<NestConfig>("nest");
 
-  app.setGlobalPrefix("api");
+  app.setGlobalPrefix("api", { exclude: ["health", "ping", "swagger"] });
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: "1",
   });
 
   // Apply documentation on non-production environment
-  if (appConfig.env !== Environment.PRODUCTION) {
-    const { title, description, version, endpoint } =
-      configService.getOrThrow<SwaggerConfig>("swagger");
-
+  const swaggerConfig = configService.getOrThrow<SwaggerConfig>("swagger");
+  if (swaggerConfig.enabled) {
     const config = new DocumentBuilder()
-      .setTitle(title)
-      .setDescription(description)
-      .setVersion(version)
+      .setTitle(swaggerConfig.title)
+      .setDescription(swaggerConfig.description)
+      .setVersion(swaggerConfig.version)
       .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup(endpoint, app, document);
+    SwaggerModule.setup(swaggerConfig.endpoint, app, document);
   }
 
   // Apply security and compression
