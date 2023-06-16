@@ -1,47 +1,36 @@
-import { Logger, VersioningType } from "@nestjs/common";
+import { Logger, RequestMethod, VersioningType } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
-import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import compression from "compression";
 import helmet from "helmet";
 
-import { Environment } from "@common/constants";
-import { logger, requestLogger } from "@common/services";
-import { AppConfig, CorsConfig, SwaggerConfig } from "@config";
+import { Config, Environment } from "@@common/constants";
+import { Swagger, logger, requestLogger } from "@@common/services";
+import { AppConfig, CorsConfig } from "@@config";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger });
-  const configService = app.get(ConfigService);
-  const appConfig = configService.getOrThrow<AppConfig>("app");
-
-  app.setGlobalPrefix("api");
+  app.setGlobalPrefix("api", {
+    exclude: [
+      { path: "health", method: RequestMethod.GET },
+      { path: "ping", method: RequestMethod.GET },
+    ],
+  });
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: "1",
   });
 
-  // Apply documentation on non-production environment
-  if (appConfig.env !== Environment.PRODUCTION) {
-    const { title, description, version, endpoint } =
-      configService.getOrThrow<SwaggerConfig>("swagger");
+  // Register documentation
+  Swagger.register(app);
 
-    const config = new DocumentBuilder()
-      .setTitle(title)
-      .setDescription(description)
-      .setVersion(version)
-      .addBearerAuth()
-      .build();
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup(endpoint, app, document);
-  }
+  // Register security and compression
+  const config = app.get(ConfigService);
+  app.use(compression(), helmet(), requestLogger);
+  app.enableCors(config.getOrThrow<CorsConfig>(Config.CORS));
 
-  // Apply security and compression
-  app.use(compression());
-  app.use(helmet());
-  app.use(requestLogger);
-  app.enableCors(configService.getOrThrow<CorsConfig>("cors"));
-
+  const appConfig = config.getOrThrow<AppConfig>(Config.APP);
   await app.listen(appConfig.port);
   const url =
     appConfig.env === Environment.PRODUCTION

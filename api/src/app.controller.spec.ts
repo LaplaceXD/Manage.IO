@@ -1,22 +1,37 @@
+import { HttpStatus, INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
+import request from "supertest";
+
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 
-describe("AppController", () => {
-  let appController: AppController;
+describe("The AppController", () => {
+  let app: INestApplication;
 
   beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
       providers: [AppService],
     }).compile();
 
-    appController = app.get<AppController>(AppController);
+    app = module.createNestApplication();
+    await app.init();
   });
 
-  describe("GET /", () => {
-    it('should return "Pong!"', () => {
-      expect(appController.ping()).toStrictEqual({ message: "Pong!" });
+  it("should be defined", () => {
+    expect(app).toBeDefined();
+  });
+
+  describe("when a GET /ping request is made", () => {
+    it("should return pong", () => {
+      return request(app.getHttpServer())
+        .get("/ping")
+        .expect(HttpStatus.OK)
+        .expect({ message: "pong!" });
     });
+  });
+
+  afterEach(async () => {
+    await app.close();
   });
 });

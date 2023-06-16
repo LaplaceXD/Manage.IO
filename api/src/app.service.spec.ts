@@ -16,7 +16,9 @@ describe("AppService", () => {
     expect(service).toBeDefined();
   });
 
-  it("ping() should return pong", () => {
-    expect(service.ping()).toStrictEqual({ message: "Pong!" });
+  describe("when the ping method is called", () => {
+    it("should return pong!", () => {
+      expect(service.ping()).toStrictEqual({ message: "pong!" });
+    });
   });
 });
